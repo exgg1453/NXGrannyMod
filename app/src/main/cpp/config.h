@@ -14,6 +14,7 @@ struct NXConfig {
     bool alwaysSeePlayer;
     bool instantHidingCheck;
     bool zeroSearchTimers;
+    float hidingCheckTrigger;
 
     bool helicopterEnabled;
     bool helicopterRequiresKey;

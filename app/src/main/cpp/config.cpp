@@ -12,14 +12,15 @@ NXConfig g_config = {
         true,
         false,
         true,
-        18.0f,
-        22.0f,
+        3.2f,
+        10.0f,
+        2.4f,
+        4.2f,
         3.0f,
+        true,
+        true,
+        true,
         3.5f,
-        3.5f,
-        true,
-        true,
-        true,
 
         true,
         true,
@@ -134,6 +135,7 @@ void Load() {
     FindBool(text, "alwaysSeePlayer", &g_config.alwaysSeePlayer);
     FindBool(text, "instantHidingCheck", &g_config.instantHidingCheck);
     FindBool(text, "zeroSearchTimers", &g_config.zeroSearchTimers);
+    FindNumber(text, "hidingCheckTrigger", &g_config.hidingCheckTrigger);
 
     FindBool(text, "helicopterEnabled", &g_config.helicopterEnabled);
     FindBool(text, "helicopterRequiresKey", &g_config.helicopterRequiresKey);

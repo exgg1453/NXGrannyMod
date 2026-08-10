@@ -53,9 +53,9 @@ void ResetState() {
 }
 
 void *ResolvePlayerTransform(void *granny) {
-    void *player = field::GetPointerByName(granny, g_grannyClass, "player");
+    void *player = field::GetPointerByName(granny, g_grannyClass, "playerPos");
     if (player == nullptr) {
-        player = field::GetPointerByName(granny, g_grannyClass, "Player");
+        player = field::GetPointerByName(granny, g_grannyClass, "player");
     }
     if (player == nullptr) {
         return nullptr;
@@ -83,52 +83,44 @@ void ApplyImpossibleMode(void *granny) {
         return;
     }
 
-    field::SetByName(granny, g_grannyClass, "walkSpeed", cfg.walkSpeed);
     field::SetByName(granny, g_grannyClass, "grannysFollowSpeed", cfg.followSpeed);
-    field::SetByName(granny, g_grannyClass, "speed", cfg.followSpeed);
-    field::SetByName(granny, g_grannyClass, "walkAnimSpeed", cfg.walkAnimSpeed);
     field::SetByName(granny, g_grannyClass, "grannysAnimFollowSpeed", cfg.followAnimSpeed);
+    field::SetByName(granny, g_grannyClass, "walkSpeed", cfg.walkSpeed);
+    field::SetByName(granny, g_grannyClass, "walkAnimSpeed", cfg.walkAnimSpeed);
     field::SetByName(granny, g_grannyClass, "attackDistance", cfg.attackDistance);
     field::SetBoolByName(granny, g_grannyClass, "dontHitPlayer", false);
 
     if (cfg.alwaysSeePlayer) {
         field::SetBoolByName(granny, g_grannyClass, "seePlayer", true);
-        field::SetBoolByName(granny, g_grannyClass, "huntPlayer", true);
         field::SetBoolByName(granny, g_grannyClass, "grannyIsFollow", true);
+        field::SetBoolByName(granny, g_grannyClass, "huntPlayer", true);
         field::SetBoolByName(granny, g_grannyClass, "grannyHearPlayer", true);
-        field::SetByName(granny, g_grannyClass, "seePlayerTimer", 999.0f);
     }
 
     if (cfg.zeroSearchTimers) {
         field::SetByName(granny, g_grannyClass, "waypointWaitTime", 0.0f);
-        field::SetByName(granny, g_grannyClass, "timerSearch", 0.0f);
-        field::SetByName(granny, g_grannyClass, "startTimerSearch", 0.0f);
         field::SetByName(granny, g_grannyClass, "safeTimer", 0.0f);
         field::SetByName(granny, g_grannyClass, "safeTimerStandStill", 0.0f);
-        field::SetByName(granny, g_grannyClass, "resetSafeTimer", 0.0f);
-        field::SetByName(granny, g_grannyClass, "timerSee", 0.0f);
     }
 
     if (cfg.instantHidingCheck) {
-        float hiding = 0.0f;
-        bool anyHiding = false;
-        if (field::GetFloatByName(granny, g_grannyClass, "playerHiding", &hiding) && hiding != 0.0f) {
-            anyHiding = true;
+        bool hiding = false;
+        float value = 0.0f;
+        static const char *kHidingFields[] = {
+                "playerHidingUnderBed",
+                "playerHidingInCoffin",
+                "playerHidingInCoffinBackyard",
+                "playerHiding"
+        };
+        for (const char *name : kHidingFields) {
+            if (field::GetFloatByName(granny, g_grannyClass, name, &value) && value != 0.0f) {
+                hiding = true;
+                break;
+            }
         }
-        if (field::GetFloatByName(granny, g_grannyClass, "playerHidingUnderBed", &hiding) && hiding != 0.0f) {
-            anyHiding = true;
-        }
-        if (field::GetFloatByName(granny, g_grannyClass, "playerHidingInCoffin", &hiding) && hiding != 0.0f) {
-            anyHiding = true;
-        }
-        if (field::GetFloatByName(granny, g_grannyClass, "playerHidingInCar", &hiding) && hiding != 0.0f) {
-            anyHiding = true;
-        }
-        if (anyHiding) {
-            field::SetByName(granny, g_grannyClass, "timerBed", 0.0f);
-            field::SetBoolByName(granny, g_grannyClass, "grannyLookUnderBed", true);
-            field::SetBoolByName(granny, g_grannyClass, "seePlayer", true);
-            field::SetBoolByName(granny, g_grannyClass, "huntPlayer", true);
+        if (hiding) {
+            field::SetByName(granny, g_grannyClass, "timerBed", cfg.hidingCheckTrigger);
+            field::SetBoolByName(granny, g_grannyClass, "grannyIsFollow", true);
         }
     }
 }

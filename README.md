@@ -19,12 +19,17 @@ Fields written on `EnemyAIGranny` every frame:
 
 | Field | Effect |
 | --- | --- |
-| `walkSpeed`, `grannysFollowSpeed`, `speed` | movement speed |
-| `walkAnimSpeed`, `grannysAnimFollowSpeed` | animation playback speed |
-| `attackDistance` | reach |
-| `seePlayer`, `huntPlayer`, `grannyIsFollow`, `grannyHearPlayer` | permanent awareness |
-| `waypointWaitTime`, `timerSearch`, `safeTimer`, `safeTimerStandStill`, `timerSee` | removes all idle and cooldown windows |
-| `timerBed`, `grannyLookUnderBed` | instant hiding spot check when `playerHiding*` is set |
+| `grannysFollowSpeed` | chase speed fed into `navComponent.speed` |
+| `walkSpeed` | patrol speed |
+| `grannysAnimFollowSpeed`, `walkAnimSpeed` | animation playback speed |
+| `attackDistance` | reach used by the catch check |
+| `seePlayer`, `grannyIsFollow`, `huntPlayer`, `grannyHearPlayer` | permanent awareness |
+| `waypointWaitTime`, `safeTimer`, `safeTimerStandStill` | removes idle and cooldown windows |
+| `timerBed` | raised to the trigger threshold while the player is hiding |
+
+The game only assigns `grannysFollowSpeed` in `Start()` from the `DiffData` PlayerPrefs value, then reads it every frame into `navComponent.speed`, so writing it each frame is what actually changes her speed. The stock values are 3.0 easy, 4.3 normal, 5.0 hard and 7.0 extreme, which is why the default here is 10.0 rather than something larger - a NavMeshAgent much above that overshoots corners.
+
+`grannyLookUnderBed` is an output flag, not an input. The game gates most of its own logic behind `!grannyLookUnderBed`, so the mod never writes it. Instead `timerBed` is raised past the three second threshold the game checks, and the game's own code plays the `lookBed` animation immediately.
 
 Field types are read from metadata at runtime, so bool, int and float fields are all written correctly.
 
