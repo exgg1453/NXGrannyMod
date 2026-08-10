@@ -96,15 +96,28 @@ bool Initialize() {
     ok &= Bind(f_getLocalScale, m_getLocalScale, transform, "get_localScale", 0);
     ok &= Bind(f_setLocalScale, m_setLocalScale, transform, "set_localScale", 1);
     ok &= Bind(f_setParent, m_setParent, transform, "SetParent", 1);
-    ok &= Bind(f_rotate, m_rotate, transform, "Rotate", 1);
-    ok &= Bind(f_destroy, m_destroy, object, "Destroy", 1);
+    m_rotate = il2cpp::FindMethodByParamType(transform, "Rotate", "UnityEngine.Vector3");
+    if (m_rotate != nullptr) {
+        f_rotate = reinterpret_cast<RotateFn>(il2cpp::MethodPointer(m_rotate));
+    } else {
+        ok = false;
+    }
+    m_destroy = il2cpp::FindMethodByParamType(object, "Destroy", "UnityEngine.Object");
+    if (m_destroy != nullptr) {
+        f_destroy = reinterpret_cast<DestroyFn>(il2cpp::MethodPointer(m_destroy));
+    } else {
+        ok = false;
+    }
     ok &= Bind(f_deltaTime, m_deltaTime, time, "get_deltaTime", 0);
 
     if (component != nullptr) {
         Bind(f_getGameObject, m_getGameObject, component, "get_gameObject", 0);
     }
     if (sceneManager != nullptr) {
-        Bind(f_loadScene, m_loadScene, sceneManager, "LoadScene", 1);
+        m_loadScene = il2cpp::FindMethodByParamType(sceneManager, "LoadScene", "System.Int32");
+        if (m_loadScene != nullptr) {
+            f_loadScene = reinterpret_cast<LoadSceneFn>(il2cpp::MethodPointer(m_loadScene));
+        }
     }
 
     g_ready = ok;

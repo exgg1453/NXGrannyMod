@@ -46,6 +46,7 @@ Il2CppString *NewString(const char *value);
 Il2CppType *ClassType(Il2CppClass *klass);
 Il2CppObject *TypeObject(Il2CppType *type);
 const char *ObjectClassName(void *object);
+MethodInfo *FindMethodByParamType(Il2CppClass *klass, const char *name, const char *paramTypeName);
 
 }
 

@@ -11,48 +11,75 @@
 
 namespace {
 
+const char *kAssemblyCSharp = "Assembly-CSharp.dll";
+
+bool WaitForRuntime() {
+    for (int attempt = 0; attempt < 1200; ++attempt) {
+        if (il2cpp::DomainGet() != nullptr) {
+            LOGI("il2cpp domain available after %d ticks", attempt);
+            return true;
+        }
+        usleep(100000);
+    }
+    LOGE("il2cpp domain never became available");
+    return false;
+}
+
+bool WaitForGameAssembly() {
+    for (int attempt = 0; attempt < 1200; ++attempt) {
+        if (il2cpp::FindImage(kAssemblyCSharp) != nullptr) {
+            LOGI("game assembly available after %d ticks", attempt);
+            return true;
+        }
+        usleep(100000);
+    }
+    LOGE("game assembly never became available");
+    return false;
+}
+
 void *InitializeThread(void *argument) {
     (void) argument;
 
+    sleep(3);
+
     config::Load();
+    if (!config::Get().enabled) {
+        LOGI("mod disabled by config");
+        return nullptr;
+    }
 
     if (!il2cpp::Initialize()) {
-        LOGE("il2cpp initialize failed");
         return nullptr;
     }
 
-    Il2CppDomain *domain = nullptr;
-    for (int attempt = 0; attempt < 600; ++attempt) {
-        domain = il2cpp::DomainGet();
-        if (domain != nullptr) {
-            break;
-        }
-        usleep(100000);
-    }
-    if (domain == nullptr) {
-        LOGE("il2cpp domain never became available");
+    if (!WaitForRuntime()) {
         return nullptr;
     }
 
-    il2cpp::ThreadAttach(domain);
+    sleep(3);
+
+    if (!WaitForGameAssembly()) {
+        return nullptr;
+    }
 
     for (int attempt = 0; attempt < 600; ++attempt) {
         if (unity::Initialize()) {
+            LOGI("unity bindings ready");
             break;
         }
-        usleep(100000);
+        usleep(200000);
     }
 
-    for (int attempt = 0; attempt < 600; ++attempt) {
+    for (int attempt = 0;; ++attempt) {
         if (mod::Install()) {
             LOGI("NXGrannyMod ready");
             return nullptr;
         }
-        usleep(100000);
+        if (attempt % 25 == 0) {
+            LOGI("waiting for game scene, attempt %d", attempt);
+        }
+        usleep(400000);
     }
-
-    LOGE("mod install failed");
-    return nullptr;
 }
 
 }
@@ -61,7 +88,11 @@ extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     (void) vm;
     (void) reserved;
 
-    shadowhook_init(SHADOWHOOK_MODE_UNIQUE, false);
+    LOGI("NXGrannyMod loading");
+
+    if (shadowhook_init(SHADOWHOOK_MODE_UNIQUE, false) != 0) {
+        LOGE("shadowhook_init failed: %s", shadowhook_to_errmsg(shadowhook_get_errno()));
+    }
 
     pthread_t thread;
     pthread_create(&thread, nullptr, InitializeThread, nullptr);

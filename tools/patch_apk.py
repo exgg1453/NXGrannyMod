@@ -165,6 +165,13 @@ def main():
             shutil.copy2(os.path.join(source, name), os.path.join(target, name))
             print("added lib/%s/%s" % (abi, name))
 
+    stale_meta = os.path.join(decoded, "original", "META-INF")
+    if os.path.isdir(stale_meta):
+        for name in os.listdir(stale_meta):
+            if name.endswith(".SF") or name.endswith(".RSA") or name.endswith(".DSA") or name == "MANIFEST.MF":
+                os.remove(os.path.join(stale_meta, name))
+                print("removed stale signature file " + name)
+
     unsigned = os.path.join(workdir, "unsigned.apk")
     build_command = [args.apktool, "b", "-f", "-o", unsigned, decoded]
     if not args.keep_resources:

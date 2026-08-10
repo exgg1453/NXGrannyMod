@@ -304,6 +304,9 @@ void HookedFixedUpdate(void *thiz, const MethodInfo *method) {
         g_state.lastGranny = thiz;
         LOGI("granny instance changed, mod state reset");
     }
+    if (config::Get().safeMode) {
+        return;
+    }
     ApplyImpossibleMode(thiz);
     UpdateHelicopter(thiz);
 }

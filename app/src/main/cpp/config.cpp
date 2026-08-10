@@ -10,6 +10,8 @@ namespace {
 
 NXConfig g_config = {
         true,
+        false,
+        true,
         18.0f,
         22.0f,
         3.0f,
@@ -121,6 +123,8 @@ void Load() {
         LOGI("config file not found, using defaults");
         return;
     }
+    FindBool(text, "enabled", &g_config.enabled);
+    FindBool(text, "safeMode", &g_config.safeMode);
     FindBool(text, "impossibleMode", &g_config.impossibleMode);
     FindNumber(text, "walkSpeed", &g_config.walkSpeed);
     FindNumber(text, "followSpeed", &g_config.followSpeed);

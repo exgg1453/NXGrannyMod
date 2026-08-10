@@ -3,6 +3,8 @@
 #include "il2cpp.h"
 
 struct NXConfig {
+    bool enabled;
+    bool safeMode;
     bool impossibleMode;
     float walkSpeed;
     float followSpeed;

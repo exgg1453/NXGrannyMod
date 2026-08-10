@@ -27,6 +27,10 @@ const Il2CppType *(*p_class_get_type)(Il2CppClass *) = nullptr;
 Il2CppObject *(*p_type_get_object)(const Il2CppType *) = nullptr;
 Il2CppClass *(*p_object_get_class)(Il2CppObject *) = nullptr;
 const char *(*p_class_get_name)(Il2CppClass *) = nullptr;
+const MethodInfo *(*p_class_get_methods)(Il2CppClass *, void **) = nullptr;
+const char *(*p_method_get_name)(const MethodInfo *) = nullptr;
+uint32_t (*p_method_get_param_count)(const MethodInfo *) = nullptr;
+Il2CppType *(*p_method_get_param)(const MethodInfo *, uint32_t) = nullptr;
 
 template <typename T>
 bool Resolve(T &target, const char *symbol) {
@@ -75,6 +79,10 @@ bool Initialize() {
     ok &= Resolve(p_type_get_object, "il2cpp_type_get_object");
     ok &= Resolve(p_object_get_class, "il2cpp_object_get_class");
     ok &= Resolve(p_class_get_name, "il2cpp_class_get_name");
+    ok &= Resolve(p_class_get_methods, "il2cpp_class_get_methods");
+    ok &= Resolve(p_method_get_name, "il2cpp_method_get_name");
+    ok &= Resolve(p_method_get_param_count, "il2cpp_method_get_param_count");
+    ok &= Resolve(p_method_get_param, "il2cpp_method_get_param");
     return ok;
 }
 
@@ -198,6 +206,37 @@ Il2CppObject *TypeObject(Il2CppType *type) {
         return nullptr;
     }
     return p_type_get_object(type);
+}
+
+MethodInfo *FindMethodByParamType(Il2CppClass *klass, const char *name, const char *paramTypeName) {
+    if (klass == nullptr || p_class_get_methods == nullptr) {
+        return nullptr;
+    }
+    void *iterator = nullptr;
+    while (true) {
+        const MethodInfo *method = p_class_get_methods(klass, &iterator);
+        if (method == nullptr) {
+            break;
+        }
+        const char *methodName = p_method_get_name(method);
+        if (methodName == nullptr || strcmp(methodName, name) != 0) {
+            continue;
+        }
+        if (p_method_get_param_count(method) != 1) {
+            continue;
+        }
+        Il2CppType *param = p_method_get_param(method, 0);
+        if (param == nullptr) {
+            continue;
+        }
+        const char *typeName = p_type_get_name(param);
+        if (typeName != nullptr && strcmp(typeName, paramTypeName) == 0) {
+            LOGI("resolved overload %s(%s)", name, typeName);
+            return const_cast<MethodInfo *>(method);
+        }
+    }
+    LOGE("overload not found: %s(%s)", name, paramTypeName);
+    return nullptr;
 }
 
 const char *ObjectClassName(void *object) {

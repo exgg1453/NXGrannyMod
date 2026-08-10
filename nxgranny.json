@@ -1,4 +1,6 @@
 {
+  "enabled": true,
+  "safeMode": false,
   "impossibleMode": true,
   "walkSpeed": 18.0,
   "followSpeed": 22.0,
