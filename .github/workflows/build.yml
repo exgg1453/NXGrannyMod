@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;26.3.11579264" "cmake;3.22.1"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build native library
+        id: build
+        run: gradle :app:assembleRelease --stacktrace 2>&1 | tee build.log
+
+      - name: Collect error log
+        if: failure()
+        run: |
+          mkdir -p artifacts
+          cp build.log artifacts/error.txt || true
+          find . -name "*.log" -path "*cxx*" -exec cat {} \; >> artifacts/error.txt || true
+
+      - name: Upload error log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error
+          path: artifacts/error.txt
+
+      - name: Stage libraries
+        run: |
+          mkdir -p out
+          cp -r app/build/intermediates/stripped_native_libs/release/*/out/lib/* out/ 2>/dev/null || \
+          cp -r app/build/intermediates/merged_native_libs/release/*/out/lib/* out/
+          ls -lhR out
+
+      - name: Upload native libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: libnxgranny
+          path: out

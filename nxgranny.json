@@ -1,0 +1,25 @@
+{
+  "impossibleMode": true,
+  "walkSpeed": 18.0,
+  "followSpeed": 22.0,
+  "walkAnimSpeed": 3.0,
+  "followAnimSpeed": 3.5,
+  "attackDistance": 3.5,
+  "alwaysSeePlayer": true,
+  "instantHidingCheck": true,
+  "zeroSearchTimers": true,
+
+  "helicopterEnabled": true,
+  "helicopterRequiresKey": true,
+  "spawnRelativeToPlayer": true,
+  "helicopterPositionX": 0.0,
+  "helicopterPositionY": 0.0,
+  "helicopterPositionZ": 30.0,
+  "helicopterKeyPositionX": 0.0,
+  "helicopterKeyPositionY": 0.0,
+  "helicopterKeyPositionZ": 12.0,
+  "helicopterScale": 1.0,
+  "escapeRadius": 3.0,
+  "keyPickupRadius": 1.8,
+  "liftDuration": 4.0
+}
