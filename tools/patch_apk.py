@@ -114,29 +114,34 @@ def main():
     parser.add_argument("--keystore", default=None)
     parser.add_argument("--keystore-pass", default="android")
     parser.add_argument("--key-alias", default="nxkey")
+    parser.add_argument("--activity", default=None)
+    parser.add_argument("--keep-resources", action="store_true")
     args = parser.parse_args()
 
     workdir = tempfile.mkdtemp(prefix="nxgranny_")
     decoded = os.path.join(workdir, "decoded")
 
-    run([args.apktool, "d", "-f", "-o", decoded, args.apk])
+    decode_command = [args.apktool, "d", "-f", "-o", decoded, args.apk]
+    if not args.keep_resources:
+        decode_command.insert(2, "-r")
+    run(decode_command)
 
     manifest_path = os.path.join(decoded, "AndroidManifest.xml")
-    package = resolve_package(manifest_path)
-    activity = find_launcher_activity(manifest_path)
+    activity = args.activity
     if activity is None:
-        raise SystemExit("launcher activity not found")
-    if activity.startswith("."):
-        activity = package + activity
-    print("package: " + package)
+        package = resolve_package(manifest_path)
+        activity = find_launcher_activity(manifest_path)
+        if activity is None:
+            raise SystemExit("launcher activity not found, pass --activity")
+        if activity.startswith("."):
+            activity = package + activity
     print("launcher activity: " + activity)
 
-    smali_root = None
-    for entry in sorted(os.listdir(decoded)):
-        if entry.startswith("smali"):
-            smali_root = os.path.join(decoded, entry)
-    if smali_root is None:
+    smali_dirs = [entry for entry in sorted(os.listdir(decoded)) if entry.startswith("smali")]
+    if not smali_dirs:
         raise SystemExit("no smali directory produced")
+    smali_root = os.path.join(decoded, smali_dirs[-1])
+    print("smali directories: " + ", ".join(smali_dirs))
 
     loader_dir = os.path.join(smali_root, "com", "nx", "grannymod")
     os.makedirs(loader_dir, exist_ok=True)
@@ -161,7 +166,10 @@ def main():
             print("added lib/%s/%s" % (abi, name))
 
     unsigned = os.path.join(workdir, "unsigned.apk")
-    run([args.apktool, "b", "-f", "-o", unsigned, decoded])
+    build_command = [args.apktool, "b", "-f", "-o", unsigned, decoded]
+    if not args.keep_resources:
+        build_command.insert(2, "-c")
+    run(build_command)
 
     aligned = os.path.join(workdir, "aligned.apk")
     run(["zipalign", "-p", "-f", "4", unsigned, aligned])

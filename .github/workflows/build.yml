@@ -61,3 +61,74 @@ jobs:
         with:
           name: libnxgranny
           path: out
+
+  patch:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install build tools
+        run: |
+          sdkmanager --install "build-tools;34.0.0"
+          echo "$ANDROID_SDK_ROOT/build-tools/34.0.0" >> $GITHUB_PATH
+
+      - name: Install apktool
+        run: |
+          curl -L -o apktool.jar https://github.com/iBotPeaches/Apktool/releases/download/v2.9.3/apktool_2.9.3.jar
+          printf '#!/bin/sh\nexec java -Xmx4g -jar %s/apktool.jar "$@"\n' "$PWD" > apktool
+          chmod +x apktool
+          echo "$PWD" >> $GITHUB_PATH
+
+      - name: Download native libraries
+        uses: actions/download-artifact@v4
+        with:
+          name: libnxgranny
+          path: out
+
+      - name: Download base APK
+        run: |
+          curl -L -o base.apk https://github.com/exgg1453/NXGrannyMod/releases/download/1.0.0/Granny1.8.12.apk
+          ls -lh base.apk
+
+      - name: Patch APK
+        id: patch
+        run: |
+          python3 tools/patch_apk.py \
+            --apk base.apk \
+            --lib-dir out \
+            --activity com.unity3d.player.UnityPlayerActivity \
+            --output Granny-1.8.12-NXMod.apk 2>&1 | tee patch.log
+
+      - name: Collect error log
+        if: failure()
+        run: |
+          mkdir -p artifacts
+          cp patch.log artifacts/error.txt || true
+
+      - name: Upload error log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-patch
+          path: artifacts/error.txt
+
+      - name: Report size
+        run: ls -lh Granny-1.8.12-NXMod.apk
+
+      - name: Upload modded APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Granny-NXMod-apk
+          path: Granny-1.8.12-NXMod.apk
