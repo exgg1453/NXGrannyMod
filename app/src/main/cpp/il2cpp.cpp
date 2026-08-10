@@ -50,9 +50,10 @@ bool Initialize() {
     if (g_handle != nullptr) {
         return true;
     }
-    for (int attempt = 0; attempt < 200; ++attempt) {
-        g_handle = dlopen("libil2cpp.so", RTLD_NOW);
+    for (int attempt = 0; attempt < 1200; ++attempt) {
+        g_handle = dlopen("libil2cpp.so", RTLD_NOW | RTLD_NOLOAD);
         if (g_handle != nullptr) {
+            LOGI("libil2cpp.so already loaded by the game after %d ticks", attempt);
             break;
         }
         usleep(100000);

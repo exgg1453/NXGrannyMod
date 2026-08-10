@@ -20,6 +20,7 @@ void *GetTransform(void *gameObject);
 void *GetGameObject(void *component);
 void SetActive(void *gameObject, bool active);
 void SetName(void *gameObject, const char *name);
+void RemoveCollider(void *gameObject);
 
 Vector3 GetPosition(void *transform);
 void SetPosition(void *transform, Vector3 position);

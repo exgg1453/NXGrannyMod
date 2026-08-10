@@ -21,6 +21,7 @@ NXConfig g_config = {
         true,
         true,
         3.5f,
+        20.0f,
 
         true,
         true,
@@ -136,6 +137,7 @@ void Load() {
     FindBool(text, "instantHidingCheck", &g_config.instantHidingCheck);
     FindBool(text, "zeroSearchTimers", &g_config.zeroSearchTimers);
     FindNumber(text, "hidingCheckTrigger", &g_config.hidingCheckTrigger);
+    FindNumber(text, "howLongFollow", &g_config.howLongFollow);
 
     FindBool(text, "helicopterEnabled", &g_config.helicopterEnabled);
     FindBool(text, "helicopterRequiresKey", &g_config.helicopterRequiresKey);

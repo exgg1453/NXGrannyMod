@@ -19,6 +19,7 @@ typedef void (*RotateFn)(void *, Vector3, const MethodInfo *);
 typedef void (*DestroyFn)(void *, const MethodInfo *);
 typedef void (*LoadSceneFn)(int, const MethodInfo *);
 typedef float (*DeltaTimeFn)(const MethodInfo *);
+typedef void *(*GetComponentFn)(void *, Il2CppObject *, const MethodInfo *);
 
 CreatePrimitiveFn f_createPrimitive = nullptr;
 GetTransformFn f_getTransform = nullptr;
@@ -34,6 +35,9 @@ RotateFn f_rotate = nullptr;
 DestroyFn f_destroy = nullptr;
 LoadSceneFn f_loadScene = nullptr;
 DeltaTimeFn f_deltaTime = nullptr;
+GetComponentFn f_getComponent = nullptr;
+MethodInfo *m_getComponent = nullptr;
+Il2CppObject *g_colliderType = nullptr;
 
 MethodInfo *m_createPrimitive = nullptr;
 MethodInfo *m_getTransform = nullptr;
@@ -113,6 +117,19 @@ bool Initialize() {
     if (component != nullptr) {
         Bind(f_getGameObject, m_getGameObject, component, "get_gameObject", 0);
     }
+
+    m_getComponent = il2cpp::FindMethodByParamType(gameObject, "GetComponent", "System.Type");
+    if (m_getComponent != nullptr) {
+        f_getComponent = reinterpret_cast<GetComponentFn>(il2cpp::MethodPointer(m_getComponent));
+    }
+
+    Il2CppClass *collider = il2cpp::FindClass("UnityEngine.PhysicsModule.dll", "UnityEngine", "Collider");
+    if (collider == nullptr) {
+        collider = il2cpp::FindClass(kCoreModule, "UnityEngine", "Collider");
+    }
+    if (collider != nullptr) {
+        g_colliderType = il2cpp::TypeObject(il2cpp::ClassType(collider));
+    }
     if (sceneManager != nullptr) {
         m_loadScene = il2cpp::FindMethodByParamType(sceneManager, "LoadScene", "System.Int32");
         if (m_loadScene != nullptr) {
@@ -161,6 +178,16 @@ void SetName(void *gameObject, const char *name) {
         return;
     }
     f_setName(gameObject, managed, m_setName);
+}
+
+void RemoveCollider(void *gameObject) {
+    if (f_getComponent == nullptr || g_colliderType == nullptr || gameObject == nullptr) {
+        return;
+    }
+    void *collider = f_getComponent(gameObject, g_colliderType, m_getComponent);
+    if (collider != nullptr) {
+        Destroy(collider);
+    }
 }
 
 Vector3 GetPosition(void *transform) {

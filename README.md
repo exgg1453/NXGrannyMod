@@ -27,15 +27,41 @@ Fields written on `EnemyAIGranny` every frame:
 | `waypointWaitTime`, `safeTimer`, `safeTimerStandStill` | removes idle and cooldown windows |
 | `timerBed` | raised to the trigger threshold while the player is hiding |
 
-The game only assigns `grannysFollowSpeed` in `Start()` from the `DiffData` PlayerPrefs value, then reads it every frame into `navComponent.speed`, so writing it each frame is what actually changes her speed. The stock values are 3.0 easy, 4.3 normal, 5.0 hard and 7.0 extreme, which is why the default here is 10.0 rather than something larger - a NavMeshAgent much above that overshoots corners.
+All of the above was verified against the shipped 1.8.12 binary rather than inferred, using the tools in `tools/`.
 
-`grannyLookUnderBed` is an output flag, not an input. The game gates most of its own logic behind `!grannyLookUnderBed`, so the mod never writes it. Instead `timerBed` is raised past the three second threshold the game checks, and the game's own code plays the `lookBed` animation immediately.
+`EnemyAIGranny::Start` reads `PlayerPrefs.GetInt("DiffData")` and writes the speed pair accordingly:
+
+| DiffData | `grannysFollowSpeed` | `grannysAnimFollowSpeed` | `howLongFollow` |
+| --- | --- | --- | --- |
+| 0 and 4 | 3.8 | 1.9 | 8.0 |
+| 1 | 2.5 | 1.25 | 6.0 |
+| 2 | 5.0 | 2.5 | 10.0 |
+| 3 | 8.5 | 4.25 | 12.0 |
+
+Animation speed is always exactly half of movement speed. `Start` also does `navComponent.speed = walkSpeed` followed by `walkAnimSpeed = navComponent.speed * 0.5`, so the mod derives both animation fields from their movement counterpart instead of exposing them separately.
+
+The default `followSpeed` of 12.0 sits above the stock extreme value of 8.5 while staying inside the range the NavMeshAgent handles without overshooting corners.
+
+`grannyLookUnderBed` is an output flag, not an input. The game gates most of its own logic behind `!grannyLookUnderBed`, so the mod never writes it. Instead `timerBed` is raised past the threshold the game checks and the game's own code plays the `lookBed` animation immediately. Disassembly of `FixedUpdate` confirms the threshold is still `3.0f` in 1.8.12, in four separate branches covering `playerHidingUnderBed`, `playerHidingInCoffin`, `playerHidingInCoffinBackyard` and `playerHidingInCar`.
 
 Field types are read from metadata at runtime, so bool, int and float fields are all written correctly.
 
 ### Helicopter escape
 
 Six cube primitives form the airframe, two of them spin as rotors. A separate cube acts as the helicopter key. When the player is inside `keyPickupRadius` of the key it is collected; when the player is then inside `escapeRadius` of the helicopter, the rotors spin up, the airframe lifts for `liftDuration` seconds and `SceneManager.LoadScene(3)` loads EndScene.
+
+## Analysis tools
+
+`libil2cpp.so` here is stripped, so `tools/` contains a self-contained pipeline that needs no .NET runtime:
+
+| Tool | Purpose |
+| --- | --- |
+| `meta.py` | parses `global-metadata.dat` into a class, field and method listing |
+| `coderegs.py` | locates the Assembly-CSharp `Il2CppCodeGenModule` and resolves method addresses |
+| `addrmap.py` | resolves method addresses across all 70 modules so call targets can be named |
+| `disasm.py` | disassembles a named method and extracts float constants |
+
+Field offsets come from `Il2CppMetadataRegistration.fieldOffsets`, found by matching the two counts that equal `typeDefinitionsCount`.
 
 ## Configuration
 

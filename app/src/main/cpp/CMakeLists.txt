@@ -10,6 +10,7 @@ add_library(nxgranny SHARED
         il2cpp.cpp
         unity.cpp
         config.cpp
+        log.cpp
         mod.cpp)
 
 find_package(shadowhook REQUIRED CONFIG)

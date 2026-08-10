@@ -15,6 +15,7 @@ struct NXConfig {
     bool instantHidingCheck;
     bool zeroSearchTimers;
     float hidingCheckTrigger;
+    float howLongFollow;
 
     bool helicopterEnabled;
     bool helicopterRequiresKey;

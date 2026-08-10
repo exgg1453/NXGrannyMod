@@ -84,9 +84,10 @@ void ApplyImpossibleMode(void *granny) {
     }
 
     field::SetByName(granny, g_grannyClass, "grannysFollowSpeed", cfg.followSpeed);
-    field::SetByName(granny, g_grannyClass, "grannysAnimFollowSpeed", cfg.followAnimSpeed);
+    field::SetByName(granny, g_grannyClass, "grannysAnimFollowSpeed", cfg.followSpeed * 0.5f);
     field::SetByName(granny, g_grannyClass, "walkSpeed", cfg.walkSpeed);
-    field::SetByName(granny, g_grannyClass, "walkAnimSpeed", cfg.walkAnimSpeed);
+    field::SetByName(granny, g_grannyClass, "walkAnimSpeed", cfg.walkSpeed * 0.5f);
+    field::SetByName(granny, g_grannyClass, "howLongFollow", cfg.howLongFollow);
     field::SetByName(granny, g_grannyClass, "attackDistance", cfg.attackDistance);
     field::SetBoolByName(granny, g_grannyClass, "dontHitPlayer", false);
 
@@ -110,6 +111,7 @@ void ApplyImpossibleMode(void *granny) {
                 "playerHidingUnderBed",
                 "playerHidingInCoffin",
                 "playerHidingInCoffinBackyard",
+                "playerHidingInCar",
                 "playerHiding"
         };
         for (const char *name : kHidingFields) {
@@ -131,6 +133,7 @@ void *SpawnPart(Vector3 localScale, const char *name) {
         return nullptr;
     }
     unity::SetName(gameObject, name);
+    unity::RemoveCollider(gameObject);
     void *transform = unity::GetTransform(gameObject);
     if (transform == nullptr) {
         return nullptr;
