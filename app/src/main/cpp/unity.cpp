@@ -20,6 +20,10 @@ typedef void (*DestroyFn)(void *, const MethodInfo *);
 typedef void (*LoadSceneFn)(int, const MethodInfo *);
 typedef float (*DeltaTimeFn)(const MethodInfo *);
 typedef void *(*GetComponentFn)(void *, Il2CppObject *, const MethodInfo *);
+typedef void *(*InstantiateFn)(void *, const MethodInfo *);
+typedef void *(*FindFn)(Il2CppString *, const MethodInfo *);
+typedef void (*LoadSceneStringFn)(Il2CppString *, const MethodInfo *);
+typedef void (*ObjectCtorFn)(void *, const MethodInfo *);
 
 CreatePrimitiveFn f_createPrimitive = nullptr;
 GetTransformFn f_getTransform = nullptr;
@@ -38,6 +42,15 @@ DeltaTimeFn f_deltaTime = nullptr;
 GetComponentFn f_getComponent = nullptr;
 MethodInfo *m_getComponent = nullptr;
 Il2CppObject *g_colliderType = nullptr;
+InstantiateFn f_instantiate = nullptr;
+MethodInfo *m_instantiate = nullptr;
+FindFn f_find = nullptr;
+MethodInfo *m_find = nullptr;
+LoadSceneStringFn f_loadSceneString = nullptr;
+MethodInfo *m_loadSceneString = nullptr;
+Il2CppClass *g_gameObjectClass = nullptr;
+ObjectCtorFn f_gameObjectCtor = nullptr;
+MethodInfo *m_gameObjectCtor = nullptr;
 
 MethodInfo *m_createPrimitive = nullptr;
 MethodInfo *m_getTransform = nullptr;
@@ -79,6 +92,10 @@ bool Initialize() {
     if (g_ready) {
         return true;
     }
+    static int attempts = 0;
+    bool verbose = (attempts == 0);
+    ++attempts;
+    (void) verbose;
     Il2CppClass *gameObject = il2cpp::FindClass(kCoreModule, "UnityEngine", "GameObject");
     Il2CppClass *transform = il2cpp::FindClass(kCoreModule, "UnityEngine", "Transform");
     Il2CppClass *object = il2cpp::FindClass(kCoreModule, "UnityEngine", "Object");
@@ -90,8 +107,33 @@ bool Initialize() {
         return false;
     }
 
+    g_gameObjectClass = gameObject;
+
     bool ok = true;
-    ok &= Bind(f_createPrimitive, m_createPrimitive, gameObject, "CreatePrimitive", 1);
+    m_createPrimitive = il2cpp::FindMethod(gameObject, "CreatePrimitive", 1);
+    if (m_createPrimitive != nullptr) {
+        f_createPrimitive = reinterpret_cast<CreatePrimitiveFn>(il2cpp::MethodPointer(m_createPrimitive));
+    } else {
+        LOGI("CreatePrimitive was stripped from this build, using Instantiate instead");
+    }
+
+    m_instantiate = il2cpp::FindMethodByParamType(object, "Instantiate", "UnityEngine.Object");
+    if (m_instantiate != nullptr) {
+        f_instantiate = reinterpret_cast<InstantiateFn>(il2cpp::MethodPointer(m_instantiate));
+    } else {
+        il2cpp::LogOverloads(object, "Instantiate");
+        ok = false;
+    }
+
+    m_find = il2cpp::FindMethodByParamType(gameObject, "Find", "System.String");
+    if (m_find != nullptr) {
+        f_find = reinterpret_cast<FindFn>(il2cpp::MethodPointer(m_find));
+    }
+
+    m_gameObjectCtor = il2cpp::FindMethod(gameObject, ".ctor", 0);
+    if (m_gameObjectCtor != nullptr) {
+        f_gameObjectCtor = reinterpret_cast<ObjectCtorFn>(il2cpp::MethodPointer(m_gameObjectCtor));
+    }
     ok &= Bind(f_getTransform, m_getTransform, gameObject, "get_transform", 0);
     ok &= Bind(f_setActive, m_setActive, gameObject, "SetActive", 1);
     ok &= Bind(f_setName, m_setName, object, "set_name", 1);
@@ -135,6 +177,13 @@ bool Initialize() {
         if (m_loadScene != nullptr) {
             f_loadScene = reinterpret_cast<LoadSceneFn>(il2cpp::MethodPointer(m_loadScene));
         }
+        m_loadSceneString = il2cpp::FindMethodByParamType(sceneManager, "LoadScene", "System.String");
+        if (m_loadSceneString != nullptr) {
+            f_loadSceneString = reinterpret_cast<LoadSceneStringFn>(il2cpp::MethodPointer(m_loadSceneString));
+        }
+        if (m_loadScene == nullptr && m_loadSceneString == nullptr) {
+            il2cpp::LogOverloads(sceneManager, "LoadScene");
+        }
     }
 
     g_ready = ok;
@@ -146,6 +195,52 @@ void *CreatePrimitive(int primitiveType) {
         return nullptr;
     }
     return f_createPrimitive(primitiveType, m_createPrimitive);
+}
+
+bool HasCreatePrimitive() {
+    return f_createPrimitive != nullptr;
+}
+
+void *Instantiate(void *original) {
+    if (f_instantiate == nullptr || original == nullptr) {
+        return nullptr;
+    }
+    return f_instantiate(original, m_instantiate);
+}
+
+void *Find(const char *name) {
+    if (f_find == nullptr) {
+        return nullptr;
+    }
+    Il2CppString *managed = il2cpp::NewString(name);
+    if (managed == nullptr) {
+        return nullptr;
+    }
+    return f_find(managed, m_find);
+}
+
+void *NewGameObject() {
+    if (f_gameObjectCtor == nullptr || g_gameObjectClass == nullptr) {
+        return nullptr;
+    }
+    void *instance = il2cpp::NewObject(g_gameObjectClass);
+    if (instance == nullptr) {
+        return nullptr;
+    }
+    f_gameObjectCtor(instance, m_gameObjectCtor);
+    return instance;
+}
+
+bool LoadSceneByName(const char *name) {
+    if (f_loadSceneString == nullptr) {
+        return false;
+    }
+    Il2CppString *managed = il2cpp::NewString(name);
+    if (managed == nullptr) {
+        return false;
+    }
+    f_loadSceneString(managed, m_loadSceneString);
+    return true;
 }
 
 void *GetTransform(void *gameObject) {

@@ -16,6 +16,11 @@ namespace unity {
 bool Initialize();
 
 void *CreatePrimitive(int primitiveType);
+bool HasCreatePrimitive();
+void *Instantiate(void *original);
+void *Find(const char *name);
+void *NewGameObject();
+bool LoadSceneByName(const char *name);
 void *GetTransform(void *gameObject);
 void *GetGameObject(void *component);
 void SetActive(void *gameObject, bool active);

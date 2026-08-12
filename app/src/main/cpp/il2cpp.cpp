@@ -4,6 +4,7 @@
 #include <dlfcn.h>
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 #include <unistd.h>
 
 namespace {
@@ -23,6 +24,7 @@ char *(*p_type_get_name)(const Il2CppType *) = nullptr;
 Il2CppThread *(*p_thread_attach)(Il2CppDomain *) = nullptr;
 Il2CppObject *(*p_runtime_invoke)(const MethodInfo *, void *, void **, Il2CppException **) = nullptr;
 Il2CppString *(*p_string_new)(const char *) = nullptr;
+Il2CppObject *(*p_object_new)(Il2CppClass *) = nullptr;
 const Il2CppType *(*p_class_get_type)(Il2CppClass *) = nullptr;
 Il2CppObject *(*p_type_get_object)(const Il2CppType *) = nullptr;
 Il2CppClass *(*p_object_get_class)(Il2CppObject *) = nullptr;
@@ -76,6 +78,7 @@ bool Initialize() {
     ok &= Resolve(p_thread_attach, "il2cpp_thread_attach");
     ok &= Resolve(p_runtime_invoke, "il2cpp_runtime_invoke");
     ok &= Resolve(p_string_new, "il2cpp_string_new");
+    ok &= Resolve(p_object_new, "il2cpp_object_new");
     ok &= Resolve(p_class_get_type, "il2cpp_class_get_type");
     ok &= Resolve(p_type_get_object, "il2cpp_type_get_object");
     ok &= Resolve(p_object_get_class, "il2cpp_object_get_class");
@@ -195,6 +198,13 @@ Il2CppString *NewString(const char *value) {
     return p_string_new(value);
 }
 
+Il2CppObject *NewObject(Il2CppClass *klass) {
+    if (p_object_new == nullptr || klass == nullptr) {
+        return nullptr;
+    }
+    return p_object_new(klass);
+}
+
 Il2CppType *ClassType(Il2CppClass *klass) {
     if (klass == nullptr) {
         return nullptr;
@@ -238,6 +248,34 @@ MethodInfo *FindMethodByParamType(Il2CppClass *klass, const char *name, const ch
     }
     LOGE("overload not found: %s(%s)", name, paramTypeName);
     return nullptr;
+}
+
+void LogOverloads(Il2CppClass *klass, const char *name) {
+    if (klass == nullptr || p_class_get_methods == nullptr) {
+        return;
+    }
+    void *iterator = nullptr;
+    while (true) {
+        const MethodInfo *method = p_class_get_methods(klass, &iterator);
+        if (method == nullptr) {
+            break;
+        }
+        const char *methodName = p_method_get_name(method);
+        if (methodName == nullptr || strcmp(methodName, name) != 0) {
+            continue;
+        }
+        uint32_t count = p_method_get_param_count(method);
+        char buffer[512];
+        int written = snprintf(buffer, sizeof(buffer), "%s(", name);
+        for (uint32_t i = 0; i < count && written < (int) sizeof(buffer) - 2; ++i) {
+            Il2CppType *param = p_method_get_param(method, i);
+            const char *typeName = param != nullptr ? p_type_get_name(param) : "?";
+            written += snprintf(buffer + written, sizeof(buffer) - written, "%s%s",
+                                i > 0 ? ", " : "", typeName != nullptr ? typeName : "?");
+        }
+        snprintf(buffer + written, sizeof(buffer) - written, ")");
+        LOGI("  available overload %s", buffer);
+    }
 }
 
 const char *ObjectClassName(void *object) {

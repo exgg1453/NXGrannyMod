@@ -47,6 +47,8 @@ Il2CppType *ClassType(Il2CppClass *klass);
 Il2CppObject *TypeObject(Il2CppType *type);
 const char *ObjectClassName(void *object);
 MethodInfo *FindMethodByParamType(Il2CppClass *klass, const char *name, const char *paramTypeName);
+void LogOverloads(Il2CppClass *klass, const char *name);
+Il2CppObject *NewObject(Il2CppClass *klass);
 
 }
 

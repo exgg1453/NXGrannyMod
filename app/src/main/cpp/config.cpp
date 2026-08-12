@@ -31,7 +31,8 @@ NXConfig g_config = {
         3.0f,
         1.8f,
         4.0f,
-        true
+        true,
+        2.0f
 };
 
 const char *kConfigPaths[] = {
@@ -122,7 +123,8 @@ void Load() {
         }
     }
     if (text.empty()) {
-        LOGI("config file not found, using defaults");
+        LOGI("config file not found at any known path, using built-in defaults");
+        LOGI("expected: /sdcard/Android/data/com.dvloper.granny/files/nxgranny.json");
         return;
     }
     FindBool(text, "enabled", &g_config.enabled);
@@ -148,6 +150,7 @@ void Load() {
     FindNumber(text, "keyPickupRadius", &g_config.keyPickupRadius);
     FindNumber(text, "liftDuration", &g_config.liftDuration);
     FindBool(text, "spawnRelativeToPlayer", &g_config.spawnRelativeToPlayer);
+    FindNumber(text, "positionLogInterval", &g_config.positionLogInterval);
 }
 
 const NXConfig &Get() {

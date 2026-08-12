@@ -62,12 +62,20 @@ void *InitializeThread(void *argument) {
         return nullptr;
     }
 
-    for (int attempt = 0; attempt < 600; ++attempt) {
+    bool unityReady = false;
+    for (int attempt = 0; attempt < 60; ++attempt) {
         if (unity::Initialize()) {
             LOGI("unity bindings ready");
+            unityReady = true;
             break;
         }
-        usleep(200000);
+        if (attempt == 0) {
+            LOGE("unity bindings incomplete, retrying quietly");
+        }
+        usleep(500000);
+    }
+    if (!unityReady) {
+        LOGE("continuing with partial unity bindings");
     }
 
     for (int attempt = 0;; ++attempt) {

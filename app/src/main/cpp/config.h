@@ -26,6 +26,7 @@ struct NXConfig {
     float keyPickupRadius;
     float liftDuration;
     bool spawnRelativeToPlayer;
+    float positionLogInterval;
 };
 
 namespace config {

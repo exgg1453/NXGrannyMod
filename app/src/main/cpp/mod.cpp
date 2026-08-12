@@ -38,6 +38,8 @@ struct ModState {
     HelicopterPart parts[8];
     int partCount;
     void *keyTransform;
+    float positionLogTimer;
+    Vector3 lastLoggedPosition;
     bool keyCollected;
     Vector3 basePosition;
     Vector3 keyPosition;
@@ -127,9 +129,46 @@ void ApplyImpossibleMode(void *granny) {
     }
 }
 
+const char *kCloneSources[] = {
+        "CarInterior",
+        "CarDoor",
+        "CarFloor",
+        "CarBumper",
+        "Box03",
+        "Box04"
+};
+
+void *g_cloneSource = nullptr;
+
+void *ResolveCloneSource() {
+    if (g_cloneSource != nullptr) {
+        return g_cloneSource;
+    }
+    for (const char *name : kCloneSources) {
+        void *found = unity::Find(name);
+        if (found != nullptr) {
+            LOGI("clone source resolved: %s", name);
+            g_cloneSource = found;
+            return g_cloneSource;
+        }
+    }
+    LOGE("no clone source found in scene");
+    return nullptr;
+}
+
 void *SpawnPart(Vector3 localScale, const char *name) {
-    void *gameObject = unity::CreatePrimitive(kPrimitiveCube);
+    void *gameObject = nullptr;
+    if (unity::HasCreatePrimitive()) {
+        gameObject = unity::CreatePrimitive(kPrimitiveCube);
+    } else {
+        void *source = ResolveCloneSource();
+        if (source == nullptr) {
+            return nullptr;
+        }
+        gameObject = unity::Instantiate(source);
+    }
     if (gameObject == nullptr) {
+        LOGE("failed to create part %s", name);
         return nullptr;
     }
     unity::SetName(gameObject, name);
@@ -219,17 +258,38 @@ void SpinRotors(float speed) {
     }
 }
 
-void UpdateHelicopter(void *granny) {
+void LogPlayerPosition(Vector3 position) {
     const NXConfig &cfg = config::Get();
-    if (!cfg.helicopterEnabled) {
+    if (cfg.positionLogInterval <= 0.0f) {
         return;
     }
+    g_state.positionLogTimer += unity::DeltaTime();
+    if (g_state.positionLogTimer < cfg.positionLogInterval) {
+        return;
+    }
+    g_state.positionLogTimer = 0.0f;
+    float moved = unity::Distance(position, g_state.lastLoggedPosition);
+    if (moved < 0.25f) {
+        return;
+    }
+    g_state.lastLoggedPosition = position;
+    LOGI("PLAYER POSITION  X=%.2f  Y=%.2f  Z=%.2f", position.x, position.y, position.z);
+}
+
+void UpdateHelicopter(void *granny) {
+    const NXConfig &cfg = config::Get();
 
     void *playerTransform = ResolvePlayerTransform(granny);
     if (playerTransform == nullptr) {
         return;
     }
     Vector3 playerPosition = unity::GetPosition(playerTransform);
+
+    LogPlayerPosition(playerPosition);
+
+    if (!cfg.helicopterEnabled) {
+        return;
+    }
 
     if (g_state.helicopterState == kHelicopterNotSpawned) {
         Vector3 anchor = cfg.helicopterPosition;
@@ -281,7 +341,9 @@ void UpdateHelicopter(void *granny) {
         UpdateHelicopterTransforms();
         if (g_state.liftTimer >= cfg.liftDuration) {
             g_state.helicopterState = kHelicopterDone;
-            unity::LoadScene(3);
+            if (!unity::LoadSceneByName("EndScene")) {
+                unity::LoadScene(3);
+            }
             LOGI("loading end scene");
         }
     }
@@ -300,6 +362,7 @@ void HookedFixedUpdate(void *thiz, const MethodInfo *method) {
         LOGI("granny instance changed, mod state reset");
     }
     if (config::Get().safeMode) {
+        UpdateHelicopter(thiz);
         return;
     }
     ApplyImpossibleMode(thiz);
