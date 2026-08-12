@@ -27,6 +27,7 @@ struct NXConfig {
     float liftDuration;
     bool spawnRelativeToPlayer;
     float positionLogInterval;
+    bool onlyOnExtreme;
 };
 
 namespace config {

@@ -32,7 +32,8 @@ NXConfig g_config = {
         1.8f,
         4.0f,
         true,
-        2.0f
+        2.0f,
+        true
 };
 
 const char *kConfigPaths[] = {
@@ -151,6 +152,7 @@ void Load() {
     FindNumber(text, "liftDuration", &g_config.liftDuration);
     FindBool(text, "spawnRelativeToPlayer", &g_config.spawnRelativeToPlayer);
     FindNumber(text, "positionLogInterval", &g_config.positionLogInterval);
+    FindBool(text, "onlyOnExtreme", &g_config.onlyOnExtreme);
 }
 
 const NXConfig &Get() {

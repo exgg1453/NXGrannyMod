@@ -50,6 +50,20 @@ Field types are read from metadata at runtime, so bool, int and float fields are
 
 Six cube primitives form the airframe, two of them spin as rotors. A separate cube acts as the helicopter key. When the player is inside `keyPickupRadius` of the key it is collected; when the player is then inside `escapeRadius` of the helicopter, the rotors spin up, the airframe lifts for `liftDuration` seconds and `SceneManager.LoadScene(3)` loads EndScene.
 
+## Difficulty gating
+
+The mod reads `PlayerPrefs.GetInt("DiffData")` once per Granny instance and decides whether to run at all:
+
+| DiffData | Meaning | Mod behaviour |
+| --- | --- | --- |
+| 4 | Practice | never touched, vanilla behaviour |
+| 0, 1, 2 | Easy through hard | untouched while `onlyOnExtreme` is true |
+| 3 | Extreme | impossible mode applies |
+
+This matters because Practice mode leaves the `EnemyAIGranny` component alive while the game keeps her passive. Writing awareness flags to that component makes an invisible Granny hunt the player, which is not something the unmodded game ever does. If `PlayerPrefs` cannot be resolved the mod stays inactive rather than guessing.
+
+Player position logging runs regardless of difficulty, so the survey workflow works in Practice mode.
+
 ## Analysis tools
 
 `libil2cpp.so` here is stripped, so `tools/` contains a self-contained pipeline that needs no .NET runtime:

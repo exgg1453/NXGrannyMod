@@ -24,6 +24,8 @@ typedef void *(*InstantiateFn)(void *, const MethodInfo *);
 typedef void *(*FindFn)(Il2CppString *, const MethodInfo *);
 typedef void (*LoadSceneStringFn)(Il2CppString *, const MethodInfo *);
 typedef void (*ObjectCtorFn)(void *, const MethodInfo *);
+typedef int (*GetPrefsIntFn)(Il2CppString *, int, const MethodInfo *);
+typedef int (*GetPrefsInt1Fn)(Il2CppString *, const MethodInfo *);
 
 CreatePrimitiveFn f_createPrimitive = nullptr;
 GetTransformFn f_getTransform = nullptr;
@@ -51,6 +53,10 @@ MethodInfo *m_loadSceneString = nullptr;
 Il2CppClass *g_gameObjectClass = nullptr;
 ObjectCtorFn f_gameObjectCtor = nullptr;
 MethodInfo *m_gameObjectCtor = nullptr;
+GetPrefsIntFn f_prefsInt2 = nullptr;
+MethodInfo *m_prefsInt2 = nullptr;
+GetPrefsInt1Fn f_prefsInt1 = nullptr;
+MethodInfo *m_prefsInt1 = nullptr;
 
 MethodInfo *m_createPrimitive = nullptr;
 MethodInfo *m_getTransform = nullptr;
@@ -165,6 +171,23 @@ bool Initialize() {
         f_getComponent = reinterpret_cast<GetComponentFn>(il2cpp::MethodPointer(m_getComponent));
     }
 
+    Il2CppClass *prefs = il2cpp::FindClass(kCoreModule, "UnityEngine", "PlayerPrefs");
+    if (prefs != nullptr) {
+        m_prefsInt2 = il2cpp::FindMethod(prefs, "GetInt", 2);
+        if (m_prefsInt2 != nullptr) {
+            f_prefsInt2 = reinterpret_cast<GetPrefsIntFn>(il2cpp::MethodPointer(m_prefsInt2));
+        }
+        m_prefsInt1 = il2cpp::FindMethod(prefs, "GetInt", 1);
+        if (m_prefsInt1 != nullptr) {
+            f_prefsInt1 = reinterpret_cast<GetPrefsInt1Fn>(il2cpp::MethodPointer(m_prefsInt1));
+        }
+        if (m_prefsInt2 == nullptr && m_prefsInt1 == nullptr) {
+            il2cpp::LogOverloads(prefs, "GetInt");
+        }
+    } else {
+        LOGE("PlayerPrefs class not found");
+    }
+
     Il2CppClass *collider = il2cpp::FindClass("UnityEngine.PhysicsModule.dll", "UnityEngine", "Collider");
     if (collider == nullptr) {
         collider = il2cpp::FindClass(kCoreModule, "UnityEngine", "Collider");
@@ -229,6 +252,24 @@ void *NewGameObject() {
     }
     f_gameObjectCtor(instance, m_gameObjectCtor);
     return instance;
+}
+
+int GetPrefsInt(const char *key, int fallback) {
+    Il2CppString *managed = il2cpp::NewString(key);
+    if (managed == nullptr) {
+        return fallback;
+    }
+    if (f_prefsInt2 != nullptr) {
+        return f_prefsInt2(managed, fallback, m_prefsInt2);
+    }
+    if (f_prefsInt1 != nullptr) {
+        return f_prefsInt1(managed, m_prefsInt1);
+    }
+    return fallback;
+}
+
+bool HasPrefsInt() {
+    return f_prefsInt2 != nullptr || f_prefsInt1 != nullptr;
 }
 
 bool LoadSceneByName(const char *name) {

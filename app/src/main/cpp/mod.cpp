@@ -32,8 +32,14 @@ struct HelicopterPart {
     bool isRotor;
 };
 
+const int kDifficultyPractice = 4;
+const int kDifficultyExtreme = 3;
+
 struct ModState {
     void *lastGranny;
+    int difficulty;
+    bool difficultyResolved;
+    bool modActive;
     int helicopterState;
     HelicopterPart parts[8];
     int partCount;
@@ -52,6 +58,37 @@ ModState g_state = {};
 void ResetState() {
     memset(&g_state, 0, sizeof(g_state));
     g_state.helicopterState = kHelicopterNotSpawned;
+    g_state.difficulty = -1;
+}
+
+void ResolveDifficulty() {
+    if (g_state.difficultyResolved) {
+        return;
+    }
+    g_state.difficultyResolved = true;
+
+    if (!unity::HasPrefsInt()) {
+        g_state.difficulty = -1;
+        g_state.modActive = false;
+        LOGE("PlayerPrefs unavailable, mod stays inactive to avoid changing vanilla behaviour");
+        return;
+    }
+
+    g_state.difficulty = unity::GetPrefsInt("DiffData", 0);
+
+    const NXConfig &cfg = config::Get();
+    if (g_state.difficulty == kDifficultyPractice) {
+        g_state.modActive = false;
+        LOGI("practice mode detected (DiffData=4), mod disabled for this run");
+        return;
+    }
+    if (cfg.onlyOnExtreme && g_state.difficulty != kDifficultyExtreme) {
+        g_state.modActive = false;
+        LOGI("DiffData=%d is not extreme, mod disabled for this run", g_state.difficulty);
+        return;
+    }
+    g_state.modActive = true;
+    LOGI("DiffData=%d, mod active", g_state.difficulty);
 }
 
 void *ResolvePlayerTransform(void *granny) {
@@ -285,8 +322,6 @@ void UpdateHelicopter(void *granny) {
     }
     Vector3 playerPosition = unity::GetPosition(playerTransform);
 
-    LogPlayerPosition(playerPosition);
-
     if (!cfg.helicopterEnabled) {
         return;
     }
@@ -361,6 +396,18 @@ void HookedFixedUpdate(void *thiz, const MethodInfo *method) {
         g_state.lastGranny = thiz;
         LOGI("granny instance changed, mod state reset");
     }
+
+    ResolveDifficulty();
+
+    void *playerTransform = ResolvePlayerTransform(thiz);
+    if (playerTransform != nullptr) {
+        LogPlayerPosition(unity::GetPosition(playerTransform));
+    }
+
+    if (!g_state.modActive) {
+        return;
+    }
+
     if (config::Get().safeMode) {
         UpdateHelicopter(thiz);
         return;

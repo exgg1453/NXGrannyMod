@@ -21,6 +21,8 @@ void *Instantiate(void *original);
 void *Find(const char *name);
 void *NewGameObject();
 bool LoadSceneByName(const char *name);
+int GetPrefsInt(const char *key, int fallback);
+bool HasPrefsInt();
 void *GetTransform(void *gameObject);
 void *GetGameObject(void *component);
 void SetActive(void *gameObject, bool active);
